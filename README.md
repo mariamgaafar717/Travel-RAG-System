@@ -1,2 +1,6 @@
 # Travel-RAG-System
-RAG system for querying tourist destinations across Egypt using semantic search.
+
+Overview
+
+This project implements a Retrieval-Augmented Generation (RAG) system for exploring tourist destinations across Egypt.
+The system processes unstructured data from sources like Wikipedia, applies custom text chunking, generates semantic embeddings, and stores them in a FAISS vector database.
