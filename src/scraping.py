@@ -1,4 +1,4 @@
-!pip install requests beautifulsoup4 pdfplumber sentence-transformers faiss-cpu
+# !pip install requests beautifulsoup4 pdfplumber sentence-transformers faiss-cpu
 
 import requests
 from bs4 import BeautifulSoup
