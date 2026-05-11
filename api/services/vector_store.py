@@ -50,6 +50,38 @@ class VectorStoreService:
             logger.info(f"Loading embedding model: {self.embedding_model_name}")
             self._model = SentenceTransformer(self.embedding_model_name)
         return self._model
+
+    def _load_place_links_from_dataset(self) -> dict:
+        """Load place-to-links mapping from the dataset stored alongside the vector store."""
+        if not self.chunks_path:
+            return {}
+
+        dataset_path = self.chunks_path.with_name("egypt_places.json")
+        if not dataset_path.exists():
+            return {}
+
+        try:
+            with open(dataset_path, "r", encoding="utf-8") as f:
+                dataset = json.load(f)
+
+            place_links = {}
+            for item in dataset:
+                place = item.get("place")
+                if not place:
+                    continue
+
+                links = item.get("links") or []
+                if not links and item.get("source"):
+                    links = [item["source"]]
+
+                if links:
+                    place_links[place] = list(dict.fromkeys(links))
+
+            return place_links
+
+        except Exception as exc:
+            logger.warning(f"Could not load dataset links for normalization: {exc}")
+            return {}
     
     def initialize_from_chunks(self, chunks: List[dict]) -> None:
         """Initialize vector store from a list of text chunks.
@@ -119,7 +151,36 @@ class VectorStoreService:
             
             # Load chunks
             with open(self.chunks_path, "rb") as f:
-                self._chunks = pickle.load(f)
+                loaded_chunks = pickle.load(f)
+
+            normalized_chunks: List[ChunkData] = []
+            for chunk in loaded_chunks:
+                if isinstance(chunk, ChunkData):
+                    chunk_data = chunk.model_dump()
+                elif hasattr(chunk, "model_dump"):
+                    chunk_data = chunk.model_dump()
+                else:
+                    chunk_data = dict(chunk)
+
+                links = chunk_data.get("links") or []
+                if not links and chunk_data.get("source"):
+                    links = [chunk_data["source"]]
+
+                chunk_data["links"] = links
+                chunk_data["source"] = chunk_data.get("source", links[0] if links else "")
+                normalized_chunks.append(ChunkData(**chunk_data))
+
+            place_links_map = self._load_place_links_from_dataset()
+            if place_links_map:
+                for chunk in normalized_chunks:
+                    dataset_links = place_links_map.get(chunk.place, [])
+                    merged_links = list(dict.fromkeys((chunk.links or []) + dataset_links))
+                    if merged_links:
+                        chunk.links = merged_links
+                        if not chunk.source:
+                            chunk.source = merged_links[0]
+
+            self._chunks = normalized_chunks
             
             self._is_initialized = True
             logger.info(f"Loaded {len(self._chunks)} chunks from disk")

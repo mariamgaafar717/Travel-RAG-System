@@ -118,6 +118,9 @@ class RAGService:
         for item in dataset:
             text = self.clean_text(item.get("text", ""))
             chunks = self.chunk_text(text, chunk_size, chunk_overlap)
+            item_links = item.get("links") or []
+            if not item_links and item.get("source"):
+                item_links = [item.get("source")]
             
             for idx, chunk in enumerate(chunks):
                 chunked_data.append({
@@ -126,7 +129,8 @@ class RAGService:
                     "type": item.get("type", "tourism"),
                     "chunk_id": idx,
                     "text": chunk,
-                    "source": item.get("source", ""),
+                    "links": item_links,
+                    "source": item_links[0] if item_links else item.get("source", ""),
                 })
         
         logger.info(f"Prepared {len(chunked_data)} chunks from dataset")
@@ -158,9 +162,13 @@ class RAGService:
         """
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
+            chunk_links = getattr(chunk, "links", []) or []
+            primary_link = getattr(chunk, "source", "")
+            if not primary_link and chunk_links:
+                primary_link = chunk_links[0]
             context_parts.append(
                 f"[Document {i} - {chunk.place}]\n"
-                f"Source: {chunk.source}\n"
+                f"Source: {primary_link}\n"
                 f"Content: {chunk.text}\n"
             )
         return "\n".join(context_parts)
@@ -204,8 +212,16 @@ Answer:"""
         """
         context_chunks = self.retrieve(query, top_k)
         
-        # Extract unique sources
-        sources = list(set(chunk.source for chunk in context_chunks if chunk.source))
+        # Extract unique links from all chunks
+        source_set = set()
+        for chunk in context_chunks:
+            chunk_links = getattr(chunk, "links", []) or []
+            chunk_source = getattr(chunk, "source", "")
+            if chunk_links:
+                source_set.update(link for link in chunk_links if link)
+            elif chunk_source:
+                source_set.add(chunk_source)
+        sources = list(source_set)
         
         # Generate context string
         context_str = self.generate_context_string(context_chunks)
@@ -258,7 +274,7 @@ Answer:"""
         
         if avg_similarity > 0.7:
             answer += "I found highly relevant information. "
-        elif avg_similarity > 0.5:
+        elif avg_similarity > 0.3:
             answer += "I found some relevant information. "
         else:
             answer += "Here's what I found related to your query: "
