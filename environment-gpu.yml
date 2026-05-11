@@ -1,0 +1,27 @@
+name: travel-rag-gpu
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=12.1
+  - faiss-gpu
+  - numpy=1.24.3
+  - pip
+  - pip:
+      - fastapi==0.104.1
+      - uvicorn[standard]==0.24.0
+      - pydantic==2.4.2
+      - pydantic-settings==2.0.3
+      - sentence-transformers==2.2.2
+      - transformers==4.34.0
+      - requests==2.31.0
+      - beautifulsoup4==4.12.2
+      - pdfplumber==0.10.3
+      - python-dotenv==1.0.0
+      - python-multipart==0.0.6

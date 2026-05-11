@@ -20,6 +20,7 @@ class VectorStoreService:
     def __init__(
         self,
         embedding_model: str = "all-MiniLM-L6-v2",
+        use_gpu: bool = True,
         embeddings_path: Optional[Path] = None,
         faiss_index_path: Optional[Path] = None,
         chunks_path: Optional[Path] = None,
@@ -28,14 +29,17 @@ class VectorStoreService:
         
         Args:
             embedding_model: Name of the sentence transformer model to use
+            use_gpu: Whether to prefer GPU when available
             embeddings_path: Path to save/load embeddings
             faiss_index_path: Path to save/load FAISS index
             chunks_path: Path to save/load chunk metadata
         """
         self.embedding_model_name = embedding_model
+        self.use_gpu = use_gpu
         self.embeddings_path = embeddings_path
         self.faiss_index_path = faiss_index_path
         self.chunks_path = chunks_path
+        self._device: Optional[str] = None
         
         # Initialize components as None, will be loaded on demand
         self._model: Optional[SentenceTransformer] = None
@@ -47,8 +51,15 @@ class VectorStoreService:
     def model(self) -> SentenceTransformer:
         """Lazy load the embedding model."""
         if self._model is None:
+            import torch
+
+            gpu_available = self.use_gpu and torch.cuda.is_available()
+            self._device = "cuda" if gpu_available else "cpu"
+            if self.use_gpu and not gpu_available:
+                logger.warning("GPU requested for embeddings, but CUDA is not available. Falling back to CPU.")
+
             logger.info(f"Loading embedding model: {self.embedding_model_name}")
-            self._model = SentenceTransformer(self.embedding_model_name)
+            self._model = SentenceTransformer(self.embedding_model_name, device=self._device)
         return self._model
 
     def _load_place_links_from_dataset(self) -> dict:
@@ -103,6 +114,9 @@ class VectorStoreService:
                 self._is_initialized = False
                 return
             
+            if self._device is None:
+                _ = self.model
+
             # Generate embeddings
             logger.info("Generating embeddings...")
             embeddings = self.model.encode(
@@ -241,6 +255,9 @@ class VectorStoreService:
             return []
         
         try:
+            if self._device is None:
+                _ = self.model
+
             # Generate embedding for query
             query_embedding = self.model.encode(
                 query,
@@ -281,6 +298,7 @@ class VectorStoreService:
             "is_initialized": self._is_initialized,
             "total_chunks": len(self._chunks),
             "embedding_model": self.embedding_model_name,
+            "embedding_device": self._device or "unknown",
         }
         
         if self._index is not None:

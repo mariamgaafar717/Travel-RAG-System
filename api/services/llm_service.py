@@ -42,14 +42,18 @@ class LLMService:
             
             logger.info(f"Loading LLM model: {self.model_name}")
             
-            device_map = "auto" if self.use_gpu else "cpu"
-            torch_dtype = torch.float16 if self.use_gpu else torch.float32
+            gpu_available = self.use_gpu and torch.cuda.is_available()
+            device = 0 if gpu_available else -1
+            torch_dtype = torch.float16 if gpu_available else torch.float32
+
+            if self.use_gpu and not gpu_available:
+                logger.warning("GPU requested for LLM, but CUDA is not available. Falling back to CPU.")
             
             self._generator = pipeline(
                 "text-generation",
                 model=self.model_name,
                 model_kwargs={"torch_dtype": torch_dtype},
-                device_map=device_map,
+                device=device,
             )
             
             self._is_initialized = True

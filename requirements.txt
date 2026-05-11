@@ -6,7 +6,7 @@ pydantic-settings==2.0.3
 
 # NLP & ML dependencies
 sentence-transformers==2.2.2
-faiss-cpu==1.7.4
+faiss-cpu==1.13.2  # Latest available on PyPI. For GPU: use conda to install faiss-gpu
 numpy==1.24.3
 
 # LLM dependencies
@@ -27,3 +27,11 @@ python-multipart==0.0.6
 # pytest-asyncio==0.21.1
 # black==23.11.0
 # flake8==6.1.0
+
+# GPU Support Notes:
+# FAISS: faiss-gpu is not available on PyPI. To use GPU-accelerated vector search:
+#   1. Install conda: https://docs.conda.io/en/latest/miniconda.html
+#   2. Create conda env: conda env create -f environment-gpu.yml
+#   3. Activate: conda activate travel-rag-gpu
+#   4. faiss-gpu will be installed via: conda install -c conda-forge faiss-gpu
+# PyTorch and Transformers will use CUDA if a CUDA-enabled build is installed

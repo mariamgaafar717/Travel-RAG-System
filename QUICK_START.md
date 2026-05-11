@@ -2,34 +2,34 @@
 
 ## 📋 Prerequisites
 
-- Python 3.9+
-- pip or conda
+- Python 3.9+ (for CPU/pip setup)
+- Miniconda/Conda (for GPU setup - recommended)
 - Docker & Docker Compose (optional, for containerized deployment)
 - 4GB+ RAM (8GB+ recommended for LLM)
-- GPU support (optional but recommended for faster inference)
+- GPU with CUDA support (optional but recommended)
 
 ## ⚡ Quick Start (5 minutes)
 
-### 1. Clone and Setup
+### Option A: GPU Setup (Recommended)
+
+```bash
+# Prerequisites: Install Miniconda from https://docs.conda.io/en/latest/miniconda.html
+
+cd Travel-RAG-System
+conda env create -f environment-gpu.yml
+conda activate travel-rag-gpu
+python init_vector_store.py
+python run_api.py
+```
+
+### Option B: CPU Setup (Pip)
 
 ```bash
 cd Travel-RAG-System
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+venv\Scripts\activate
 pip install -r requirements.txt
-```pip install faiss-cpu
-
-### 2. Prepare Data
-
-Ensure `data/egypt_places.json` exists with your dataset, then:
-
-```bash
 python init_vector_store.py
-```
-
-### 3. Run API
-
-```bash
 python run_api.py
 ```
 
@@ -210,18 +210,32 @@ python init_vector_store.py --rebuild
 
 ```bash
 # Check torch installation
-python -c "import torch; print(torch.__version__)"
+python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
 
-# Install with CPU support
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# For GPU setup: Ensure you're using the conda environment
+conda activate travel-rag-gpu
+
+# For pip setup: You have CPU-only PyTorch (FAISS will also be CPU-only)
+```
+
+### FAISS Still CPU
+
+```bash
+# FAISS GPU is only available via conda with faiss-gpu package
+# Use Option A (GPU Setup) from Quick Start:
+conda env create -f environment-gpu.yml
+conda activate travel-rag-gpu
 ```
 
 ### Out of Memory
 
 ```bash
-# Run on CPU instead of GPU
+# Reduce model or use CPU
 export USE_GPU=False
 python run_api.py
+
+# Or switch to smaller embedding model in .env:
+EMBEDDING_MODEL=all-MiniLM-L6-v2  # Already the smallest
 ```
 
 ## 📚 Documentation

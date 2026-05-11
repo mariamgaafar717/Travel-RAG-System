@@ -50,6 +50,7 @@ def initialize_vector_store(rebuild: bool = False) -> bool:
         logger.info("\nInitializing Vector Store...")
         vector_store = VectorStoreService(
             embedding_model=settings.EMBEDDING_MODEL,
+            use_gpu=settings.USE_GPU,
             embeddings_path=settings.EMBEDDINGS_PATH,
             faiss_index_path=settings.FAISS_INDEX_PATH,
             chunks_path=settings.CHUNKS_PATH,
