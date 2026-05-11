@@ -262,48 +262,9 @@ Answer:"""
             sources=sources,
         )
     
-    def _generate_basic_answer(self, query: str, context: List[ChunkData]) -> str:
-        """Generate a basic answer from retrieved context.
-        
-        This is a simple answer generation without calling an LLM.
-        For production, integrate with actual LLM APIs.
-        
-        Args:
-            query: User query
-            context: Retrieved context chunks
-            
-        Returns:
-            Generated answer
-        """
+    def _generate_basic_answer(self, query, context):
+
         if not context:
-            return "I couldn't find information about that topic in the knowledge base."
-        
-        # Extract place information from context
-        places = set()
-        for chunk in context:
-            if chunk.place and chunk.place != "Unknown":
-                places.add(chunk.place)
-        
-        places_str = ", ".join(sorted(places))
-        
-        # Simple answer template
-        answer = f"Based on information about {places_str}, "
-        
-        # Add similarity-based response
-        avg_similarity = sum(
-            chunk.similarity_score or 0 for chunk in context
-        ) / len(context) if context else 0
-        
-        if avg_similarity > 0.7:
-            answer += "I found highly relevant information. "
-        elif avg_similarity > 0.3:
-            answer += "I found some relevant information. "
-        else:
-            answer += "Here's what I found related to your query: "
-        
-        # Add context summary
-        if context:
-            answer += f"The most relevant destination is {context[0].place}. "
-            answer += "For more details, please check the retrieved context documents below."
-        
-        return answer
+            return "I don't have enough information about that."
+
+        return context[0].text
