@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["rag"])
 
 
-# Dependency injection functions (will be populated by main.py)
 _vector_store: Optional[VectorStoreService] = None
 _rag_service: Optional[RAGService] = None
 

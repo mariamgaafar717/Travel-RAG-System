@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class VectorStoreService:
-    """Service for managing embeddings and vector similarity search."""
     
     def __init__(
         self,
@@ -24,14 +23,7 @@ class VectorStoreService:
         faiss_index_path: Optional[Path] = None,
         chunks_path: Optional[Path] = None,
     ):
-        """Initialize vector store service.
-        
-        Args:
-            embedding_model: Name of the sentence transformer model to use
-            embeddings_path: Path to save/load embeddings
-            faiss_index_path: Path to save/load FAISS index
-            chunks_path: Path to save/load chunk metadata
-        """
+      
         self.embedding_model_name = embedding_model
         self.embeddings_path = embeddings_path
         self.faiss_index_path = faiss_index_path
@@ -84,15 +76,10 @@ class VectorStoreService:
             return {}
     
     def initialize_from_chunks(self, chunks: List[dict]) -> None:
-        """Initialize vector store from a list of text chunks.
         
-        Args:
-            chunks: List of dictionaries containing chunk data with 'text' key
-        """
         try:
             logger.info(f"Initializing vector store with {len(chunks)} chunks")
             
-            # Extract texts and create ChunkData objects
             texts = [chunk.get("text", "") for chunk in chunks]
             self._chunks = [
                 ChunkData(**chunk) for chunk in chunks
@@ -103,7 +90,6 @@ class VectorStoreService:
                 self._is_initialized = False
                 return
             
-            # Generate embeddings
             logger.info("Generating embeddings...")
             embeddings = self.model.encode(
                 texts,
@@ -111,7 +97,7 @@ class VectorStoreService:
                 show_progress_bar=True
             )
             
-            # Create FAISS index
+            # FAISS------------------------------------------------------------<3 
             logger.info("Creating FAISS index...")
             dimension = embeddings.shape[1]
             self._index = faiss.IndexFlatL2(dimension)
@@ -130,11 +116,7 @@ class VectorStoreService:
             raise
     
     def load_from_disk(self) -> bool:
-        """Load vector store from disk files.
-        
-        Returns:
-            True if successfully loaded, False otherwise
-        """
+     
         try:
             if not self.faiss_index_path or not self.chunks_path:
                 logger.warning("No save paths configured")
@@ -192,11 +174,7 @@ class VectorStoreService:
             return False
     
     def save_to_disk(self) -> bool:
-        """Save vector store to disk.
-        
-        Returns:
-            True if successfully saved, False otherwise
-        """
+       
         try:
             if not self.faiss_index_path or not self.chunks_path:
                 logger.warning("No save paths configured")
@@ -227,15 +205,7 @@ class VectorStoreService:
             return False
     
     def search(self, query: str, top_k: int = 5) -> List[ChunkData]:
-        """Search for similar chunks given a query.
         
-        Args:
-            query: Query text
-            top_k: Number of top results to return
-            
-        Returns:
-            List of most similar ChunkData objects
-        """
         if not self._is_initialized or self._index is None:
             logger.warning("Vector store not initialized")
             return []
@@ -258,8 +228,6 @@ class VectorStoreService:
             for idx, distance in zip(indices[0], distances[0]):
                 if idx < len(self._chunks):
                     chunk = self._chunks[idx]
-                    # Convert L2 distance to similarity score
-                    # For L2 distance, we use exponential decay
                     similarity = np.exp(-distance / 2.0)
                     chunk_with_score = chunk.copy()
                     chunk_with_score.similarity_score = float(similarity)
@@ -272,11 +240,9 @@ class VectorStoreService:
             return []
     
     def is_initialized(self) -> bool:
-        """Check if vector store is initialized."""
         return self._is_initialized
     
     def get_stats(self) -> dict:
-        """Get vector store statistics."""
         stats = {
             "is_initialized": self._is_initialized,
             "total_chunks": len(self._chunks),

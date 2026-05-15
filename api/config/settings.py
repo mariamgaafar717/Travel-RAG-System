@@ -20,20 +20,20 @@ class Settings(BaseSettings):
     PORT: int = int(os.getenv("PORT", 8000))
     RELOAD: bool = os.getenv("RELOAD", "False").lower() == "true"
     
-    # Model Configuration
+    # Model con
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     CHUNK_SIZE: int = 100
     CHUNK_OVERLAP: int = 20
     TOP_K_RESULTS: int = 5
     
-    # Data Paths
+    # Data paths
     DATA_DIR: Path = Path(__file__).parent.parent.parent / "data"
     EMBEDDINGS_PATH: Path = DATA_DIR / "embeddings.pkl"
     FAISS_INDEX_PATH: Path = DATA_DIR / "faiss_index.bin"
     CHUNKS_PATH: Path = DATA_DIR / "chunks.pkl"
     DATASET_PATH: Path = DATA_DIR / "egypt_places.json"
     
-    # LLM Configuration (for future use with actual LLMs)
+    # LLM con
     LLM_MODEL: str = os.getenv("LLM_MODEL", "Qwen/Qwen2.5-1.5B-Instruct")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "256"))

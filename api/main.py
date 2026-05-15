@@ -78,7 +78,6 @@ async def lifespan(app: FastAPI):
             chunk_overlap=settings.CHUNK_OVERLAP,
         )
         
-        # Set dependencies for routes
         set_dependencies(vector_store, rag_service)
         
         logger.info("✓ All services initialized successfully")
@@ -89,7 +88,6 @@ async def lifespan(app: FastAPI):
     
     yield
     
-    # Shutdown logic
     logger.info("Shutting down Travel RAG System API...")
     try:
         if vector_store:
@@ -114,14 +112,13 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify allowed origins
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Include routes
 app.include_router(router)
 
 
@@ -139,7 +136,6 @@ async def root():
     }
 
 
-# Exception handlers
 @app.exception_handler(ValueError)
 async def value_error_handler(request, exc):
     """Handle ValueError exceptions."""
@@ -167,7 +163,7 @@ async def general_exception_handler(request, exc):
     )
 
 
-# Startup event (optional, for additional initialization)
+# Startup event
 @app.on_event("startup")
 async def startup_event():
     """Additional startup logic."""

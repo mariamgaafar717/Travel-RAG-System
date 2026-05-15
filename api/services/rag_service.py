@@ -173,11 +173,7 @@ class RAGService:
             )
         return "\n".join(context_parts)
     
-    def generate_answer_prompt(
-        self,
-        query: str,
-        context: str,
-    ) -> str:
+    def generate_answer_prompt(self,query: str,context: str,chunks: List[ChunkData],) -> str:
         """Generate a prompt for LLM-based answer generation.
         
         Args:
@@ -187,10 +183,35 @@ class RAGService:
         Returns:
             Formatted prompt for LLM
         """
+        places = set()
+        for chunk in chunks:
+            if chunk.place and chunk.place != "Unknown":
+                places.add(chunk.place)
+
+        places_str = ", ".join(sorted(places))
+
         prompt = f"""You are a knowledgeable Egypt travel guide.
-Answer the question using ONLY the documents below.
-Use ONLY the context. Do not guess.
-If the answer is not in the documents, say: 'I don't have enough information about that.'
+Your tasks:
+Answer tourism questions using ONLY the retrieved context.
+Support both English and Arabic queries.
+Support cross-lingual retrieval between Arabic and English.
+Handle Arabic text normalization including:
+removing diacritics.
+normalizing different Alef forms.
+handling Arabic script variations.
+
+Rules:
+ONLY use information about these places: {places_str}
+Do NOT use information about other locations.
+Do NOT use outside knowledge.
+Do NOT guess or generate unsupported information.
+If the answer is not found in the context, say:
+"I don't have enough information about that location."
+
+Language Rules:
+If the user asks in Arabic, answer in Arabic.
+If the user asks in English, answer in English.
+Keep answers concise, clear, and informative.
 
 Context:
 {context}
@@ -210,7 +231,24 @@ Answer:"""
         Returns:
             RAG response with context and generated answer
         """
+        query = query.lower()
         context_chunks = self.retrieve(query, top_k)
+        chuncks_only_query_place=[]
+        for chunks_place in context_chunks:
+            place_name=chunks_place.place.lower()
+            if place_name in query:
+                chuncks_only_query_place.append(chunks_place)
+
+        if chuncks_only_query_place:
+            context_chunks=chuncks_only_query_place
+
+        if not context_chunks:
+            return RAGResponse(
+                query=query,
+                context=[],
+                answer="I don't have enough information about that location.",
+                sources=[],
+            )
         
         # Extract unique links from all chunks
         source_set = set()
@@ -228,7 +266,7 @@ Answer:"""
         
         # Generate answer using LLM if available, otherwise use basic generation
         if self.llm_service and self.llm_service.is_initialized():
-            prompt = self.generate_answer_prompt(query, context_str)
+            prompt = self.generate_answer_prompt(query, context_str,context_chunks)
             answer = self.llm_service.generate(prompt)
         else:
             answer = self._generate_basic_answer(query, context_chunks)
